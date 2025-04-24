@@ -3,7 +3,7 @@ package com.devnguyen2k1.ai_retouch.data.repository
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.devnguyen2k1.ai_retouch.data.remote.ApiClient
+import com.devnguyen2k1.ai_retouch.data.remote.ApiService
 import com.devnguyen2k1.ai_retouch.domain.entities.RestoredImage
 import com.devnguyen2k1.ai_retouch.domain.repository.PhotoRepository
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -11,15 +11,19 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import javax.inject.Inject
+import javax.inject.Named
 
-class PhotoRepositoryImpl(
-    private val context: Context
+class PhotoRepositoryImpl @Inject constructor(
+    private val context: Context,
+    @Named("tokenService") private val tokenService: ApiService, // Inject ApiService for token
+    @Named("restoreService") private val restoreService: ApiService // Inject ApiService for image restoration
 ) : PhotoRepository {
 
     override suspend fun restoreImage(imageUri: Uri): RestoredImage? {
         try {
             // Lấy token từ API
-            val tokenResponse = ApiClient.tokenService.getToken()
+            val tokenResponse = tokenService.getToken()
             val token = tokenResponse.data?.emToken
 
             // Kiểm tra nếu token không hợp lệ hoặc rỗng
@@ -44,7 +48,7 @@ class PhotoRepositoryImpl(
             val langPart = "en".toRequestBody("text/plain".toMediaTypeOrNull())
 
             // Gọi API để phục hồi ảnh
-            val result = ApiClient.restoreService.restoreImage(
+            val result = restoreService.restoreImage(
                 input_image = imagePart,
                 lang = langPart,
                 token = "Bearer $token",
